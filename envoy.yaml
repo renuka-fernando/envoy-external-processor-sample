@@ -125,6 +125,8 @@ static_resources:
                             prefix: "/svc-1"
                           route:
                             cluster_header: x-target-cluster
+                          request_headers_to_remove:
+                            - x-target-cluster
                 http_protocol_options: {}
 
   clusters:

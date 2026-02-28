@@ -1,7 +1,7 @@
 services:
   envoy:
     # image: envoyproxy/envoy:v1.34.1
-    image: envoyproxy/envoy:v1.36.2
+    image: envoyproxy/envoy:v1.37.0
     volumes:
       - ./envoy.yaml:/etc/envoy/envoy.yaml
     command: /usr/local/bin/envoy -c /etc/envoy/envoy.yaml --service-cluster front-proxy --file-flush-interval-msec 50
