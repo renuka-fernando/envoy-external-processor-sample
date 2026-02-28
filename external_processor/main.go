@@ -53,25 +53,42 @@ func (s *server) Process(processServer ext_proc_v3.ExternalProcessor_ProcessServ
 			httpMethod := headersMap[":method"]
 			requestPath := headersMap[":path"]
 			logrus.Print(fmt.Sprintf("******** Processing Request Headers ******** Method:%s, Path:%s", httpMethod, requestPath))
+
+			// Check if dynamic metadata from the first ext_proc filter is present
+			isSecondExtProc := false
+			if metadataContext := req.GetMetadataContext(); metadataContext != nil {
+				if ns, ok := metadataContext.GetFilterMetadata()["api_platform.policy_engine.envoy.filters.http.ext_proc"]; ok {
+					if _, ok := ns.GetFields()["execute-the-path-rewrite"]; ok {
+						isSecondExtProc = true
+					}
+				}
+			}
+
+			setHeaders := make([]*core_v3.HeaderValueOption, 0)
+			if !isSecondExtProc {
+				logrus.Print("******** First ext_proc: Setting x-target-cluster: upstream-service-2 ********")
+				setHeaders = append(setHeaders, &core_v3.HeaderValueOption{
+					Header: &core_v3.HeaderValue{
+						Key:      "x-target-cluster",
+						RawValue: []byte("upstream-service-2"),
+					},
+				})
+			} else {
+				logrus.Print("******** Second ext_proc: Setting :path: /hello-world-ext-proc ********")
+				setHeaders = append(setHeaders, &core_v3.HeaderValueOption{
+					Header: &core_v3.HeaderValue{
+						Key:      ":path",
+						RawValue: []byte("/hello-world-ext-proc"),
+					},
+				})
+			}
+
 			resp = &pb.ProcessingResponse{
 				Response: &pb.ProcessingResponse_RequestHeaders{
 					RequestHeaders: &pb.HeadersResponse{
 						Response: &pb.CommonResponse{
 							HeaderMutation: &pb.HeaderMutation{
-								SetHeaders: []*core_v3.HeaderValueOption{
-									{
-										Header: &core_v3.HeaderValue{
-											Key:      ":path",
-											RawValue: []byte("/hello-world-ext-proc"),
-										},
-									},
-									// {
-									// 	Header: &core_v3.HeaderValue{
-									// 		Key:      "x-target-cluster",
-									// 		RawValue: []byte("upstream-service-2"),
-									// 	},
-									// },
-								},
+								SetHeaders: setHeaders,
 							},
 						},
 					},
@@ -82,17 +99,9 @@ func (s *server) Process(processServer ext_proc_v3.ExternalProcessor_ProcessServ
 							Kind: &structpb.Value_StructValue{
 								StructValue: &structpb.Struct{
 									Fields: map[string]*structpb.Value{
-										"foo": {
-											Kind: &structpb.Value_StructValue{
-												StructValue: &structpb.Struct{
-													Fields: map[string]*structpb.Value{
-														"bar": {
-															Kind: &structpb.Value_StringValue{
-																StringValue: "baz",
-															},
-														},
-													},
-												},
+										"execute-the-path-rewrite": {
+											Kind: &structpb.Value_BoolValue{
+												BoolValue: true,
 											},
 										},
 									},

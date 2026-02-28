@@ -44,7 +44,38 @@ static_resources:
                           function envoy_on_response(response_handle)
                             response_handle:logInfo("Bye from lua-0 DEFAULT")
                           end
-                  - name: api_platform.policy_engine.envoy.filters.http.ext_proc
+                  - name: api_platform.policy_engine.envoy.filters.http.ext_proc-1
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExternalProcessor
+                      grpc_service:
+                        envoy_grpc:
+                          cluster_name: ext-processor-grpc-service
+                        timeout: 0.250s
+                      failure_mode_allow: false
+                      route_cache_action: CLEAR
+                      metadata_options:
+                        forwarding_namespaces:
+                          typed:
+                            - "api_platform.policy_engine.envoy.filters.http.ext_proc"
+                          untyped:
+                            - "api_platform.policy_engine.envoy.filters.http.ext_proc"
+                        receiving_namespaces:
+                          typed:
+                            - "api_platform.policy_engine.envoy.filters.http.ext_proc"
+                          untyped:
+                            - "api_platform.policy_engine.envoy.filters.http.ext_proc"
+                      processing_mode:
+                        request_header_mode: SEND
+                        response_header_mode: SEND
+                        request_trailer_mode: SKIP
+                        response_trailer_mode: SKIP
+                        # https://www.envoyproxy.io/docs/envoy/v1.33.0/api-v3/extensions/filters/http/ext_proc/v3/processing_mode.proto#envoy-v3-api-enum-extensions-filters-http-ext-proc-v3-processingmode-bodysendmode
+                        request_body_mode: NONE
+                        response_body_mode: NONE
+                      message_timeout:
+                        seconds: 20
+                        nanos: 250000000 # 250ms
+                  - name: api_platform.policy_engine.envoy.filters.http.ext_proc-2
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.ext_proc.v3.ExternalProcessor
                       grpc_service:
