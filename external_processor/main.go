@@ -54,12 +54,49 @@ func (s *server) Process(processServer ext_proc_v3.ExternalProcessor_ProcessServ
 			requestPath := headersMap[":path"]
 			logrus.Print(fmt.Sprintf("******** Processing Request Headers ******** Method:%s, Path:%s", httpMethod, requestPath))
 			resp = &pb.ProcessingResponse{
-				Response: &pb.ProcessingResponse_RequestHeaders{},
+				Response: &pb.ProcessingResponse_RequestHeaders{
+					RequestHeaders: &pb.HeadersResponse{
+						Response: &pb.CommonResponse{
+							HeaderMutation: &pb.HeaderMutation{
+								SetHeaders: []*core_v3.HeaderValueOption{
+									{
+										Header: &core_v3.HeaderValue{
+											Key:      ":path",
+											RawValue: []byte("/hello-world-ext-proc"),
+										},
+									},
+									// {
+									// 	Header: &core_v3.HeaderValue{
+									// 		Key:      "x-target-cluster",
+									// 		RawValue: []byte("upstream-service-2"),
+									// 	},
+									// },
+								},
+							},
+						},
+					},
+				},
 				DynamicMetadata: &structpb.Struct{
 					Fields: map[string]*structpb.Value{
-						"hello": {
-							Kind: &structpb.Value_StringValue{
-								StringValue: "world",
+						"api_platform.policy_engine.envoy.filters.http.ext_proc": {
+							Kind: &structpb.Value_StructValue{
+								StructValue: &structpb.Struct{
+									Fields: map[string]*structpb.Value{
+										"foo": {
+											Kind: &structpb.Value_StructValue{
+												StructValue: &structpb.Struct{
+													Fields: map[string]*structpb.Value{
+														"bar": {
+															Kind: &structpb.Value_StringValue{
+																StringValue: "baz",
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
 							},
 						},
 					},
@@ -97,10 +134,32 @@ func (s *server) Process(processServer ext_proc_v3.ExternalProcessor_ProcessServ
 											RawValue: []byte("renuka"),
 										},
 									},
-									{
-										Header: &core_v3.HeaderValue{
-											Key:      "Content-Length",
-											RawValue: []byte(fmt.Sprint(len("Hello World"))),
+									// {
+									// 	Header: &core_v3.HeaderValue{
+									// 		Key:      "Content-Length",
+									// 		RawValue: []byte(fmt.Sprint(len("Hello World"))),
+									// 	},
+									// },
+								},
+							},
+						},
+					},
+				},
+				DynamicMetadata: &structpb.Struct{
+					Fields: map[string]*structpb.Value{
+						"api_platform.policy_engine.envoy.filters.http.ext_proc": {
+							Kind: &structpb.Value_StructValue{
+								StructValue: &structpb.Struct{
+									Fields: map[string]*structpb.Value{
+										"foo-resp": {
+											Kind: &structpb.Value_StringValue{
+												StringValue: "bar-resp",
+											},
+										},
+										"foo": {
+											Kind: &structpb.Value_StringValue{
+												StringValue: "bar-resp2",
+											},
 										},
 									},
 								},

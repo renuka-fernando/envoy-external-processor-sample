@@ -13,7 +13,7 @@ docker compose up -d; docker compose logs -ft
 ### Test
 
 ```sh
-curl http://localhost:8000/foo/123?myQuery=bar -H 'MyHeader: Foo' -i -d 'foo bar'
+curl http://localhost:8000/svc-1/123?myQuery=bar -H 'MyHeader: Foo' -i -d 'foo bar'
 ```
 
 ### Stop
