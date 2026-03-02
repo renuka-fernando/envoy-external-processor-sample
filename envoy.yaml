@@ -60,6 +60,9 @@ static_resources:
                         response_trailer_mode: SKIP
                         request_body_mode: NONE
                         response_body_mode: NONE
+                      mutation_rules:
+                        disallow_system: true
+                        disallow_is_error: true
                       metadata_options:
                         forwarding_namespaces:
                           typed:
