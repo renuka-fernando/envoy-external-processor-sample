@@ -1,10 +1,13 @@
 services:
   envoy:
     # image: envoyproxy/envoy:v1.34.1
-    image: envoyproxy/envoy:v1.37.0
+    # image: envoyproxy/envoy:v1.36.4
+    # image: envoyproxy/envoy:v1.37.1
+    image: envoy-static:latest
+    platform: linux/amd64
     volumes:
       - ./envoy.yaml:/etc/envoy/envoy.yaml
-    command: /usr/local/bin/envoy -c /etc/envoy/envoy.yaml --service-cluster front-proxy --file-flush-interval-msec 50
+    command: /usr/local/bin/envoy -c /etc/envoy/envoy.yaml --service-cluster front-proxy --file-flush-interval-msec 50 --component-log-level ext_proc:trace
     ports:
       - "9000:9000"
       - "8000:8000"

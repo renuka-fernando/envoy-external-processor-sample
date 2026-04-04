@@ -60,6 +60,7 @@ static_resources:
                         response_trailer_mode: SKIP
                         request_body_mode: NONE
                         response_body_mode: NONE
+                      allow_mode_override: true
                       mutation_rules:
                         disallow_system: true
                         disallow_is_error: true
@@ -123,6 +124,22 @@ static_resources:
                               substitution: /bar/\1
                             append_x_forwarded_host: true
                             cluster: localhost_service
+                        - name: mcp
+                          match:
+                            prefix: "/mcp"
+                          route:
+                            append_x_forwarded_host: true
+                            cluster: mcp_service
+                        - name: anthropic
+                          match:
+                            prefix: "/anthropic"
+                          route:
+                            regex_rewrite:
+                              pattern:
+                                regex: /anthropic/(.*)
+                              substitution: /\1
+                            host_rewrite_literal: api.anthropic.com
+                            cluster: anthropic_service
                         - name: upstream-1
                           match:
                             prefix: "/svc-1"
@@ -189,3 +206,34 @@ static_resources:
                     socket_address:
                       address: 127.0.0.1
                       port_value: 8000
+    - name: mcp_service
+      connect_timeout: 0.25s
+      type: STRICT_DNS
+      lb_policy: ROUND_ROBIN
+      load_assignment:
+        cluster_name: mcp_service
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: host.docker.internal
+                      port_value: 3001
+    - name: anthropic_service
+      connect_timeout: 0.25s
+      type: LOGICAL_DNS
+      lb_policy: ROUND_ROBIN
+      transport_socket:
+        name: envoy.transport_sockets.tls
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+          sni: api.anthropic.com
+      load_assignment:
+        cluster_name: anthropic_service
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: api.anthropic.com
+                      port_value: 443

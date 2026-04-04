@@ -6,8 +6,10 @@ import (
 	"io"
 	"log"
 	"net"
+	"time"
 
 	core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	ext_procv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_proc/v3"
 	ext_proc_v3 "github.com/envoyproxy/go-control-plane/envoy/service/ext_proc/v3"
 	pb "github.com/envoyproxy/go-control-plane/envoy/service/ext_proc/v3"
 	"github.com/sirupsen/logrus"
@@ -31,6 +33,7 @@ func (s *server) Process(processServer ext_proc_v3.ExternalProcessor_ProcessServ
 			return ctx.Err()
 		default:
 		}
+		time.Sleep(100 * time.Microsecond)
 		req, err := processServer.Recv()
 		if err == io.EOF {
 			logrus.Debug("EOF")
@@ -55,42 +58,39 @@ func (s *server) Process(processServer ext_proc_v3.ExternalProcessor_ProcessServ
 			logrus.Print(fmt.Sprintf("******** Processing Request Headers ******** Method:%s, Path:%s", httpMethod, requestPath))
 
 			logrus.Print("******** Setting x-target-cluster: upstream-service-2 ********")
-			setHeaders := []*core_v3.HeaderValueOption{
-				{
-					Header: &core_v3.HeaderValue{
-						Key:      "x-target-cluster",
-						RawValue: []byte("upstream-service-1"),
-					},
-				},
-			}
+			// setHeaders := []*core_v3.HeaderValueOption{
+			// 	{
+			// 		Header: &core_v3.HeaderValue{
+			// 			Key:      "x-target-cluster",
+			// 			RawValue: []byte("upstream-service-1"),
+			// 		},
+			// 	},
+			// }
 
 			resp = &pb.ProcessingResponse{
-				Response: &pb.ProcessingResponse_RequestHeaders{
-					RequestHeaders: &pb.HeadersResponse{
-						Response: &pb.CommonResponse{
-							HeaderMutation: &pb.HeaderMutation{
-								SetHeaders: setHeaders,
-							},
-						},
-					},
+				ModeOverride: &ext_procv3.ProcessingMode{
+					RequestBodyMode:    ext_procv3.ProcessingMode_BUFFERED,
+					ResponseHeaderMode: ext_procv3.ProcessingMode_SEND,
+					ResponseBodyMode:   ext_procv3.ProcessingMode_BUFFERED,
 				},
-				DynamicMetadata: &structpb.Struct{
-					Fields: map[string]*structpb.Value{
-						"api_platform.policy_engine.envoy.filters.http.ext_proc": {
-							Kind: &structpb.Value_StructValue{
-								StructValue: &structpb.Struct{
-									Fields: map[string]*structpb.Value{
-										"rewrite_path": {
-											Kind: &structpb.Value_StringValue{
-												StringValue: "/hello-world-ext-proc",
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
+				Response: &pb.ProcessingResponse_RequestHeaders{},
+				// DynamicMetadata: &structpb.Struct{
+				// 	Fields: map[string]*structpb.Value{
+				// 		"api_platform.policy_engine.envoy.filters.http.ext_proc": {
+				// 			Kind: &structpb.Value_StructValue{
+				// 				StructValue: &structpb.Struct{
+				// 					Fields: map[string]*structpb.Value{
+				// 						"rewrite_path": {
+				// 							Kind: &structpb.Value_StringValue{
+				// 								StringValue: "/hello-world-ext-proc",
+				// 							},
+				// 						},
+				// 					},
+				// 				},
+				// 			},
+				// 		},
+				// 	},
+				// },
 			}
 		case *pb.ProcessingRequest_RequestBody:
 			logrus.Print("******** Processing Request Body ******** body: ", string(value.RequestBody.Body))
@@ -107,6 +107,9 @@ func (s *server) Process(processServer ext_proc_v3.ExternalProcessor_ProcessServ
 			status := headersMap[":status"]
 			logrus.Print(fmt.Sprintf("******** Processing Response Headers ******** status:%v", status))
 			resp = &pb.ProcessingResponse{
+				ModeOverride: &ext_procv3.ProcessingMode{
+					ResponseBodyMode: ext_procv3.ProcessingMode_FULL_DUPLEX_STREAMED,
+				},
 				Response: &pb.ProcessingResponse_ResponseHeaders{
 					ResponseHeaders: &pb.HeadersResponse{
 						Response: &pb.CommonResponse{
@@ -159,14 +162,17 @@ func (s *server) Process(processServer ext_proc_v3.ExternalProcessor_ProcessServ
 				},
 			}
 		case *pb.ProcessingRequest_ResponseBody:
-			logrus.Print("******** Processing Response Body ******** body: ", string(value.ResponseBody.Body))
+			logrus.Print("******** Processing Response Body ******** [RENUKA] body: ", string(value.ResponseBody.Body))
 			resp = &pb.ProcessingResponse{
 				Response: &pb.ProcessingResponse_ResponseBody{
 					ResponseBody: &pb.BodyResponse{
 						Response: &pb.CommonResponse{
 							BodyMutation: &pb.BodyMutation{
-								Mutation: &pb.BodyMutation_Body{
-									Body: []byte("Hello World"),
+								Mutation: &pb.BodyMutation_StreamedResponse{
+									StreamedResponse: &pb.StreamedBodyResponse{
+										Body:        value.ResponseBody.Body,
+										EndOfStream: value.ResponseBody.EndOfStream,
+									},
 								},
 							},
 						},
