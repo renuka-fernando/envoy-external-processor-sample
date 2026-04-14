@@ -4,7 +4,7 @@ FROM --platform=linux/amd64 ubuntu:22.04
 #     ca-certificates \
 #     && rm -rf /var/lib/apt/lists/*
 
-COPY envoy-static-no-fix /usr/local/bin/envoy
+COPY envoy-static-pr-suggestion /usr/local/bin/envoy
 
 RUN chmod +x /usr/local/bin/envoy
 

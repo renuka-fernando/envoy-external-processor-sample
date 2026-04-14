@@ -3,7 +3,7 @@ services:
     # image: envoyproxy/envoy:v1.34.1
     # image: envoyproxy/envoy:v1.36.4
     # image: envoyproxy/envoy:v1.37.1
-    image: envoy-static:latest
+    image: envoy-static-pr-suggestion:latest
     platform: linux/amd64
     volumes:
       - ./envoy.yaml:/etc/envoy/envoy.yaml
@@ -11,6 +11,10 @@ services:
     ports:
       - "9000:9000"
       - "8000:8000"
+  everything-mcp:
+    image: rakhitharr/mcp-everything:v3
+    ports:
+      - "3001:3001"
   request_info-1:
     image: renukafernando/request-info:latest
     command: ["-addr", ":8080", "-pretty"]
